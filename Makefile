@@ -27,7 +27,7 @@ ifneq ($(DEFAULT_FEATURES),)
 endif
 
 # family name of the variable fonts, e.g. "make var VAR_FAMILY='Foo Variable'"
-VAR_FAMILY ?= Inter Variable
+VAR_FAMILY ?= Swinter Variable
 
 # build/option-NAME changes when the variable NAME does, which rebuilds the fonts
 build/option-%: FORCE
