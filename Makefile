@@ -20,6 +20,18 @@ ifndef DEBUG
 	FM_ARGS += --verbose WARNING
 endif
 
+# features to turn on by default in the fonts, e.g. "make var DEFAULT_FEATURES=cv05,ss07"
+DEFAULT_FEATURES ?=
+ifneq ($(DEFAULT_FEATURES),)
+	default_features = python misc/tools/default-features.py $(DEFAULT_FEATURES) $(1)
+endif
+
+# build/default-features changes when DEFAULT_FEATURES does, which rebuilds the fonts
+build/default-features: FORCE
+	@mkdir -p build
+	@echo "$(DEFAULT_FEATURES)" | cmp -s - $@ || echo "$(DEFAULT_FEATURES)" > $@
+FORCE:
+
 # ---------------------------------------------------------------------------------
 # intermediate sources
 
@@ -164,13 +176,15 @@ else
 endif
 
 
-$(FONTDIR)/static/%.otf: $(UFODIR)/%.ufo build/features_data | $(FONTDIR)/static venv
+$(FONTDIR)/static/%.otf: $(UFODIR)/%.ufo build/features_data build/default-features | $(FONTDIR)/static venv
 	fontmake -u $< -o otf --output-path $@.tmp.otf $(FM_ARGS_2)
 	psautohint -o $@ $@.tmp.otf
 	@rm $@.tmp.otf
+	$(call default_features,$@)
 
-$(FONTDIR)/static/%.ttf: $(UFODIR)/%.ufo build/features_data | $(FONTDIR)/static venv
+$(FONTDIR)/static/%.ttf: $(UFODIR)/%.ufo build/features_data build/default-features | $(FONTDIR)/static venv
 	fontmake -u $< -o ttf --output-path $@ $(FM_ARGS_2)
+	$(call default_features,$@)
 
 
 AUTOHINT_ARGS := --stem-width-mode=qqq --no-info
@@ -215,11 +229,13 @@ $(FONTDIR)/var/.%.var.otf: $(UFODIR)/%.var.designspace build/features_data | $(F
 	misc/tools/woff2 compress -o "$@" "$<"
 
 
-$(FONTDIR)/var/InterVariable.ttf: $(FONTDIR)/var/.Inter-Roman.var.ttf misc/tools/bake-vf.py
+$(FONTDIR)/var/InterVariable.ttf: $(FONTDIR)/var/.Inter-Roman.var.ttf misc/tools/bake-vf.py build/default-features
 	python misc/tools/bake-vf.py $< -o $@
+	$(call default_features,$@)
 
-$(FONTDIR)/var/InterVariable-Italic.ttf: $(FONTDIR)/var/.Inter-Italic.var.ttf misc/tools/bake-vf.py
+$(FONTDIR)/var/InterVariable-Italic.ttf: $(FONTDIR)/var/.Inter-Italic.var.ttf misc/tools/bake-vf.py build/default-features
 	python misc/tools/bake-vf.py $< -o $@
+	$(call default_features,$@)
 
 
 $(FONTDIR)/static:
