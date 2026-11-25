@@ -26,10 +26,13 @@ ifneq ($(DEFAULT_FEATURES),)
 	default_features = python misc/tools/default-features.py $(DEFAULT_FEATURES) $(1)
 endif
 
-# build/default-features changes when DEFAULT_FEATURES does, which rebuilds the fonts
-build/default-features: FORCE
+# family name of the variable fonts, e.g. "make var VAR_FAMILY='Foo Variable'"
+VAR_FAMILY ?= Inter Variable
+
+# build/option-NAME changes when the variable NAME does, which rebuilds the fonts
+build/option-%: FORCE
 	@mkdir -p build
-	@echo "$(DEFAULT_FEATURES)" | cmp -s - $@ || echo "$(DEFAULT_FEATURES)" > $@
+	@echo "$($*)" | cmp -s - $@ || echo "$($*)" > $@
 FORCE:
 
 # ---------------------------------------------------------------------------------
@@ -47,8 +50,8 @@ $(UFODIR)/features:
 	@ln -s ../../src/features $(UFODIR)/features
 
 # designspace & master UFOs
-$(UFODIR)/%.var.designspace: $(UFODIR)/%.designspace misc/tools/gen-var-designspace.py | venv
-	python misc/tools/gen-var-designspace.py $< $@
+$(UFODIR)/%.var.designspace: $(UFODIR)/%.designspace misc/tools/gen-var-designspace.py build/option-VAR_FAMILY | venv
+	python misc/tools/gen-var-designspace.py --family "$(VAR_FAMILY)" $< $@
 
 $(UFODIR)/%.designspace: $(UFODIR)/%.glyphs $(UFODIR)/features misc/tools/postprocess-designspace.py | venv
 	fontmake $(FM_ARGS) -o ufo -g $< --designspace-path $@ \
@@ -176,13 +179,13 @@ else
 endif
 
 
-$(FONTDIR)/static/%.otf: $(UFODIR)/%.ufo build/features_data build/default-features | $(FONTDIR)/static venv
+$(FONTDIR)/static/%.otf: $(UFODIR)/%.ufo build/features_data build/option-DEFAULT_FEATURES | $(FONTDIR)/static venv
 	fontmake -u $< -o otf --output-path $@.tmp.otf $(FM_ARGS_2)
 	psautohint -o $@ $@.tmp.otf
 	@rm $@.tmp.otf
 	$(call default_features,$@)
 
-$(FONTDIR)/static/%.ttf: $(UFODIR)/%.ufo build/features_data build/default-features | $(FONTDIR)/static venv
+$(FONTDIR)/static/%.ttf: $(UFODIR)/%.ufo build/features_data build/option-DEFAULT_FEATURES | $(FONTDIR)/static venv
 	fontmake -u $< -o ttf --output-path $@ $(FM_ARGS_2)
 	$(call default_features,$@)
 
@@ -229,12 +232,12 @@ $(FONTDIR)/var/.%.var.otf: $(UFODIR)/%.var.designspace build/features_data | $(F
 	misc/tools/woff2 compress -o "$@" "$<"
 
 
-$(FONTDIR)/var/InterVariable.ttf: $(FONTDIR)/var/.Inter-Roman.var.ttf misc/tools/bake-vf.py build/default-features
-	python misc/tools/bake-vf.py $< -o $@
+$(FONTDIR)/var/InterVariable.ttf: $(FONTDIR)/var/.Inter-Roman.var.ttf misc/tools/bake-vf.py build/option-VAR_FAMILY build/option-DEFAULT_FEATURES
+	python misc/tools/bake-vf.py --family "$(VAR_FAMILY)" $< -o $@
 	$(call default_features,$@)
 
-$(FONTDIR)/var/InterVariable-Italic.ttf: $(FONTDIR)/var/.Inter-Italic.var.ttf misc/tools/bake-vf.py build/default-features
-	python misc/tools/bake-vf.py $< -o $@
+$(FONTDIR)/var/InterVariable-Italic.ttf: $(FONTDIR)/var/.Inter-Italic.var.ttf misc/tools/bake-vf.py build/option-VAR_FAMILY build/option-DEFAULT_FEATURES
+	python misc/tools/bake-vf.py --family "$(VAR_FAMILY)" $< -o $@
 	$(call default_features,$@)
 
 
