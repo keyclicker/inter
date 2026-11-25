@@ -17,26 +17,26 @@ def fixup_names(instance_or_source):
     instance_or_source.styleName = instance_or_source.styleName.replace('Display ', '')
 
 
-def fixup_instance(designspace, instance):
+def fixup_instance(designspace, instance, psFamily):
   fixup_names(instance)
 
   # note: these must match name ID 25 "Variations PostScript Name Prefix"
   # which in turn must be unique for the roman vs italic fonts.
-  # If you change this, also update bake-vf.py to match.
+  # bake-vf.py derives name ID 25 from the same family name.
   # See https://github.com/rsms/inter/issues/577
   isItalic = "Italic" in instance.styleName
   psStyle = remove_whitespace(instance.styleName)
   if isItalic:
     psStyle = psStyle.replace('Italic','')
     if psStyle == '':
-      instance.postScriptFontName = 'InterVariableItalic'
+      instance.postScriptFontName = psFamily + 'Italic'
     else:
-      instance.postScriptFontName = 'InterVariableItalic-' + psStyle
+      instance.postScriptFontName = psFamily + 'Italic-' + psStyle
   else:
     if psStyle == 'Regular':
-      instance.postScriptFontName = 'InterVariable'
+      instance.postScriptFontName = psFamily
     else:
-      instance.postScriptFontName = 'InterVariable-' + psStyle
+      instance.postScriptFontName = psFamily + '-' + psStyle
 
   instance.styleMapFamilyName = instance.styleMapFamilyName.replace(' Display', '')
 
@@ -53,7 +53,7 @@ def fixup_instance(designspace, instance):
         del customParameters[i]
 
 
-def fixup_instances(designspace):
+def fixup_instances(designspace, psFamily):
   USE_DISPLAY_AS_DEFAULT = False
   i = len(designspace.instances)
   while i > 0:
@@ -61,12 +61,12 @@ def fixup_instances(designspace):
     instance = designspace.instances[i]
     if USE_DISPLAY_AS_DEFAULT:
       if instance.name.find('Inter Display') != -1:
-        fixup_instance(designspace, instance)
+        fixup_instance(designspace, instance, psFamily)
       else:
         del designspace.instances[i]
     else:
       if instance.name.find('Inter Display') == -1:
-        fixup_instance(designspace, instance)
+        fixup_instance(designspace, instance, psFamily)
       else:
         del designspace.instances[i]
 
@@ -96,6 +96,8 @@ def fixup_sources(designspace):
 def main(argv):
   ap = argparse.ArgumentParser(description=
     'Generate designspace file for variable font from generic designspace file')
+  ap.add_argument("--family", metavar="<name>", default="Inter Variable",
+    help='Family name of the variable font. Defaults to "Inter Variable"')
   ap.add_argument("input_designspace", help="Path to generic designspace file")
   ap.add_argument("output_designspace", help="Path for output designspace file")
 
@@ -103,7 +105,7 @@ def main(argv):
 
   designspace = DesignSpaceDocument.fromfile(args.input_designspace)
 
-  fixup_instances(designspace)
+  fixup_instances(designspace, remove_whitespace(args.family))
   # fixup_axes_defaults(designspace)
   fixup_sources(designspace)
 
