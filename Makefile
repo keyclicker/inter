@@ -21,7 +21,7 @@ ifndef DEBUG
 endif
 
 # features to turn on by default in the fonts, e.g. "make var DEFAULT_FEATURES=cv05,ss07"
-DEFAULT_FEATURES ?=
+DEFAULT_FEATURES ?= cv01,cv05,cv10,ss07,ss08
 ifneq ($(DEFAULT_FEATURES),)
 	default_features = python misc/tools/default-features.py $(DEFAULT_FEATURES) $(1)
 endif
